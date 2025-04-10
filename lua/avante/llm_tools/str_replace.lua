@@ -76,9 +76,24 @@ function M.func(opts, on_log, on_complete, session_ctx)
   for i = 1, #lines - #old_lines + 1 do
     local match = true
     for j = 1, #old_lines do
-      if lines[i + j - 1] ~= old_lines[j] then
-        match = false
-        break
+      Utils.debug("checking line", i + j - 1, lines[i + j - 1])
+      Utils.debug("checking old line", j, old_lines[j])
+      -- Normalize line endings and whitespace for comparison
+      -- Handle both CRLF (\r\n) and standalone CR (\r) characters
+      local normalized_line = lines[i + j - 1]:gsub("\r\n", "\n"):gsub("\r", "\n")
+      local normalized_old_line = old_lines[j]:gsub("\r\n", "\n"):gsub("\r", "\n")
+
+      -- First try exact match after normalization
+      if normalized_line ~= normalized_old_line then
+        -- If exact match fails, try comparing with trimmed whitespace
+        -- This helps with indentation differences that might occur
+        local trimmed_line = normalized_line:gsub("^%s+", ""):gsub("%s+$", "")
+        local trimmed_old_line = normalized_old_line:gsub("^%s+", ""):gsub("%s+$", "")
+
+        if trimmed_line ~= trimmed_old_line then
+          match = false
+          break
+        end
       end
     end
     if match then
@@ -88,7 +103,13 @@ function M.func(opts, on_log, on_complete, session_ctx)
     end
   end
   if start_line == nil or end_line == nil then
-    on_complete(false, "Failed to find the old string: " .. opts.old_str)
+    -- Provide a more helpful error message
+    local error_msg = "Failed to find the old string. Check for:"
+    error_msg = error_msg .. "\n- Exact whitespace and indentation"
+    error_msg = error_msg .. "\n- Line ending differences (CRLF vs LF)"
+    error_msg = error_msg .. "\n- Invisible characters"
+    error_msg = error_msg .. "\n\nString being searched for:\n" .. opts.old_str
+    on_complete(false, error_msg)
     return
   end
   ---@diagnostic disable-next-line: assign-type-mismatch, missing-fields
