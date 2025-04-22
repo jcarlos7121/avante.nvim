@@ -105,6 +105,7 @@ cmd("ChatNew", function(opts)
   require("avante.api").ask(args)
 end, { desc = "avante: create new chat", nargs = "*", complete = ask_complete })
 cmd("Toggle", function() require("avante").toggle() end, { desc = "avante: toggle AI panel" })
+cmd("AddProjectToRag", function() require("avante").add_resource_to_rag() end, { desc = "avante: add project to RAG" })
 cmd("Build", function(opts)
   local args = Utils.parse_args(opts.fargs)
 
